@@ -70,7 +70,8 @@
   }
   #drop strong { display: block; font-size: 14.5px; font-weight: 650; }
   #drop small { display: block; color: var(--muted); font-size: 12.5px; }
-  .status { min-height: 20px; margin: 10px 2px 0; font-size: 13px; color: var(--muted); text-align: center; }
+  .status { margin: 10px 2px 0; font-size: 13px; color: var(--muted); text-align: center; }
+  .status:empty { display: none; }
   .status.ok { color: #7aa2f0; font-weight: 500; }
   .status.error { color: #dc2626; }
 
@@ -292,6 +293,17 @@ const LogCore = (() => {
   const isColor = c => /^#[0-9a-f]{3,8}$/i.test(c || "");
   const channelOf = article => (article.match(CHANNEL_ID_RE) || [, ""])[1];
 
+  function cleanArticle(a, stripBrackets) {
+    if (stripBrackets) a = a.replace(/(<span class="channel-name">)\s*\[([\s\S]*?)\]\s*(<\/span>)/, "$1$2$3");
+    a = a.replace(/(<time class="timestamp"[^>]*>[^<]*?\d{1,2}:\d{2}):\d{2}(?=\s*<\/time>)/, "$1");
+    if (!a.includes("[편집 완료]") || a.includes('class="roll-result')) return a;
+    return a
+      .replace(/\r?\n[ \t]*(?:<span class="edited">)?\[편집 완료\](?:<\/span>)?[ \t]*(?=\r?\n)/g, "")
+      .replace(/(<div class="message-text">)\[편집 완료\]\r?\n?/g, "$1")
+      .replace(/<span class="edited">\[편집 완료\]<\/span>/g, "")
+      .replace(/ ?\[편집 완료\]/g, "");
+  }
+
   function analyze(html) {
     const channels = new Map();
     for (const [article] of html.matchAll(ARTICLE_RE)) {
@@ -325,7 +337,7 @@ const LogCore = (() => {
         display: none;
       }`);
     }
-    for (const [id, { bg, fg }] of Object.entries(o.styles || {})) {
+    for (const [id, { bg, fg, date }] of Object.entries(o.styles || {})) {
       if (!keptIds.has(id)) continue;
       const sel = `.message[data-channel="${cssString(id)}"]`;
       const sys = `.message.system[data-channel="${cssString(id)}"]`;
@@ -343,6 +355,11 @@ const LogCore = (() => {
         rules.push(`${sel} .message-text,
       ${sys} {
         color: ${fg};
+      }`);
+      }
+      if (isColor(date)) {
+        rules.push(`${sel} .timestamp {
+        color: ${date};
       }`);
       }
     }
@@ -365,9 +382,7 @@ const LogCore = (() => {
       if (excluded.has(id)) { removed++; continue; }
       kept++;
       keptIds.add(id);
-      parts.push(o.labelMode === "badge"
-        ? m[0].replace(/(<span class="channel-name">)\s*\[([\s\S]*?)\]\s*(<\/span>)/, "$1$2$3")
-        : m[0]);
+      parts.push(cleanArticle(m[0], o.labelMode === "badge"));
     }
     parts.push(html.slice(pos));
     let out = parts.join("");
@@ -478,7 +493,7 @@ const ZipReader = (() => {
   const frame = $("previewFrame"), clearBtn = $("clearFiles");
 
   const PRESETS = {
-    personal: { bg: "#1f1f1f", fg: "#9e9e9e" },
+    personal: { bg: "#1f1f1f", fg: "#9e9e9e", date: "#666666" },
     info: { bg: "#1f1f1f", fg: "#ffffff" },
   };
   const PRESET_OPTIONS = [["default", "기본"], ["personal", "개인 탭"], ["info", "정보 탭"], ["custom", "직접 설정"]];
