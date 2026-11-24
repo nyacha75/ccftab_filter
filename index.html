@@ -220,7 +220,7 @@
           <label for="title">로그 제목</label>
           <div class="row">
             <input type="text" id="title" placeholder="제목 없음" />
-            <label class="check"><input type="checkbox" id="removeTitle" />제목 삭제</label>
+            <label class="check"><input type="checkbox" id="removeTitle" checked />제목 삭제</label>
           </div>
         </div>
         <div class="field">
@@ -562,7 +562,7 @@ const ZipReader = (() => {
   function selectDoc(i) {
     current = docs[i];
     titleIn.value = cleanTitle(current.info.title);
-    titleIn.disabled = removeTitleCb.checked = false;
+    titleIn.disabled = removeTitleCb.checked = true;
     state = new Map(current.info.channels.map(ch => {
       const g = groupOf(ch);
       const added = g === GROUP.custom || g === GROUP.secret;
@@ -677,7 +677,7 @@ const ZipReader = (() => {
     listEl.replaceChildren();
     baseSel.replaceChildren();
     titleIn.value = "";
-    titleIn.disabled = removeTitleCb.checked = false;
+    titleIn.disabled = removeTitleCb.checked = true;
     frame.removeAttribute("srcdoc");
     panel.classList.add("hidden");
     clearBtn.classList.add("hidden");
